@@ -18,6 +18,9 @@ everything:
       
     $ cabal build
 
+The build programs will show up under `dist/build/<program>/<program>`
+e.g. `dist/build/mapper/mapper`.
+
 ## Programs
 
 ### Mapper
