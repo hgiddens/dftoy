@@ -9,6 +9,8 @@ import System.Posix.Process (getProcessID)
 import System.Posix.Types
 import Text.Printf (printf)
 
+-- Bunch of FFI declarations for mmap(2) and friends. I did find a Haskell mmap
+-- library on Hackage but it only dealt with mapping actual files.
 foreign import capi "sys/mman.h value MAP_ANON" map_anon :: CInt
 foreign import capi "sys/mman.h value MAP_PRIVATE" map_private :: CInt
 foreign import capi "sys/mman.h value PROT_READ" prot_read :: CInt
@@ -22,6 +24,10 @@ foreign import capi "mach/vm_statistics.h value VM_MEMORY_APPLICATION_SPECIFIC_1
 blockSize :: CSize
 blockSize = CSize 4096
 
+-- Map a page of memory. It's tagged appropriately to make it easier to find
+-- via vmmap(1).
+--
+-- Currently there's no error checking :(
 allocateBlock :: IO (Ptr ())
 allocateBlock = mmap addr len prot flags fd offset
     where
@@ -51,6 +57,9 @@ main = do
   putStrLn $ printf "Started up with PID %s" (show pid)
   addr <- allocateBlock
   putStrLn $ printf "Allocated block at %0#16x" (toInteger (ptrToIntPtr addr))
+  -- we allocate a temp block here which we later free to try and prevent the
+  -- blocks addr and addr' abutting (which means they show up as a single, two
+  -- page block in vmmap.
   tmp <- allocateBlock
   addr' <- allocateBlock
   freeBlock tmp
